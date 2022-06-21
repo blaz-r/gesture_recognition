@@ -1,1 +1,7 @@
 /venv/
+.idea
+models
+!models/hand_landmark_lite.tflite
+!models/n_hand_landmark_lite_sh4.blob
+!models/palm_detection_lite.tflite
+!models/n_palm_detection_lite_sh4.blob
