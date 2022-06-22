@@ -16,3 +16,10 @@ depthai==2.16.0.0
 opencv-python
 numpy
 blobconverter
+
+# used for postprocessing model
+torch == 1.9
+torchvision == 0.10.0
+onnx
+# simplifier doesn't work with py 3.10 yet
+onnx-simplifier

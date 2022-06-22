@@ -63,6 +63,6 @@ convert_model () {
 		-o ${model_name}_sh4.blob
 }
 
-# new models are work on interval [0, 1]
+# new models work on interval [0, 1]
 convert_model palm_detection_lite "" "[255.0,255.0,255.0]" "u8"
 convert_model hand_landmark_lite "" "[255.0,255.0,255.0]" "u8"
