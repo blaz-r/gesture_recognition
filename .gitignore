@@ -5,3 +5,6 @@ models
 !models/n_hand_landmark_lite_sh4.blob
 !models/palm_detection_lite.tflite
 !models/n_palm_detection_lite_sh4.blob
+!models/palm_detection_post/convert_model.sh
+!models/palm_detection_post/make_torch_pd_postprocess.py
+!models/palm_detection_post/palm_detection_post_sh2.blob
