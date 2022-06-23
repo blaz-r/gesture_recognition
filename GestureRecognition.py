@@ -18,8 +18,9 @@ class GestureRecognition:
         self.manager_script_path = "manager_script.py"
 
         self.resolution = (1920, 1080)
-        self.internal_frame_height = 640
 
+        # scale image, this better in my case than native 1920 x 1080
+        self.internal_frame_height = 640
         width, self.scale_nd = mpu.find_isp_scale_params(self.internal_frame_height * self.resolution[0] / self.resolution[1],
                                                          self.resolution,
                                                          is_height=False)
@@ -64,8 +65,6 @@ class GestureRecognition:
         rgb_cam.setIspScale(self.scale_nd[0], self.scale_nd[1])
         rgb_cam.setVideoSize(self.img_w, self.img_h)
         rgb_cam.setPreviewSize(self.img_w, self.img_h)
-        # rgb_cam.setVideoSize(self.resolution[0], self.resolution[1])
-        # rgb_cam.setPreviewSize(self.resolution[0], self.resolution[1])
 
         print("Adding video out to queue")
         cam_out = pipeline.createXLinkOut()
@@ -118,6 +117,7 @@ class GestureRecognition:
         rgb_cam.preview.link(preprocess_lm_manip.inputImage)
         manager_script.outputs["preprocess_lm_manip_config"].link(preprocess_lm_manip.inputConfig)
 
+        # pre lm manipulation debug output queue
         pre_lm_manip_out = pipeline.createXLinkOut()
         pre_lm_manip_out.setStreamName("pre_lm_manip_out")
         preprocess_lm_manip.out.link(pre_lm_manip_out.input)
@@ -128,6 +128,7 @@ class GestureRecognition:
         preprocess_lm_manip.out.link(lm_mediapipe_model.input)
         lm_mediapipe_model.out.link(manager_script.inputs["lm_result"])
 
+        print("Pipeline successfully created")
         return pipeline
 
     def extract_hand_data(self, res):
@@ -144,6 +145,8 @@ class GestureRecognition:
         hand.norm_landmarks = np.array(res['rrn_lms']).reshape(-1, 3)
         hand.landmarks = (np.array(res["sqn_lms"]) * self.frame_size).reshape(-1, 2).astype(int)
 
+        # since we added padding to make the image square,
+        # we need to remove this padding from landmark coordinates and from rect_points
         if self.pad_h > 0:
             hand.landmarks[:, 1] -= self.pad_h
             for i in range(len(hand.rect_points)):
@@ -165,11 +168,7 @@ class GestureRecognition:
             pre_lm_manip = pre_lm_manip.getCvFrame()
             cv2.imshow("pre_lm_manip", pre_lm_manip)
 
-        manager_data = self.q_manager_out.tryGet()
-        if manager_data is None:
-            return video_frame, None, None
-        else:
-            res = marshal.loads(manager_data.getData())
+        res = marshal.loads(self.q_manager_out.get().getData())
 
         hand = None
         if res["detection"]:

@@ -220,7 +220,7 @@ def hand_landmarks_to_ROI(sqn_lms):
     sqn_rr_center_x = (center_x + 0.1 * height * sin_rot)
     sqn_rr_center_y = (center_y - 0.1 * height * cos_rot)
 
-    return sqn_rr_center_x, sqn_rr_center_y, sqn_rr_size
+    return sqn_rr_center_x, sqn_rr_center_y, sqn_rr_size, rotation
 
 # manager params
 
@@ -285,9 +285,9 @@ def main():
             # landmarks successfully obtained -> transition to tracking
             current_state = State.TRACKING
 
-            handedness = lm_result.getLayerFp16("Identity_2")[0]
-            rrn_lms = lm_result.getLayerFp16("Identity_dense/BiasAdd/Add")
-            world_lms = lm_result.getLayerFp16("Identity_3_dense/BiasAdd/Add")
+            handedness = lm_result.getLayerFp16("Identity_2")[0]                # [1, 1]    0..1
+            rrn_lms = lm_result.getLayerFp16("Identity_dense/BiasAdd/Add")      # [1, 63]   21 landmarks
+            world_lms = lm_result.getLayerFp16("Identity_3_dense/BiasAdd/Add")  # [1, 63]   21 landmarks
 
             sqn_lms = transform_to_sqn_landmarks(rrn_lms, sqn_rr_center_x, sqn_rr_center_y, sqn_rr_size, rotation)
 
@@ -296,9 +296,8 @@ def main():
                              sqn_rr_center_y, sqn_rr_size, rotation,
                              rrn_lms, sqn_lms, world_lms)
 
-
             # Calculate the ROI for next frame
-            sqn_rr_center_x, sqn_rr_center_y, sqn_rr_size = hand_landmarks_to_ROI(sqn_lms)
+            sqn_rr_center_x, sqn_rr_center_y, sqn_rr_size, rotation = hand_landmarks_to_ROI(sqn_lms)
         else:
             current_state = State.DETECTION
             send_result_no_hand()
