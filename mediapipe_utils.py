@@ -41,6 +41,16 @@ class HandRegion:
         self.pd_score = pd_score  # Palm detection score
         self.pd_box = pd_box  # Palm detection box [x, y, w, h] normalized
         self.pd_kps = pd_kps  # Palm detection keypoints
+        self.rect_x_center_a = None
+        self.rect_y_center_a = None
+        self.rect_w_a = None
+        self.rotation = None
+        self.rect_points = None
+        self.lm_score = None
+        self.handedness = None
+        self.label = None
+        self.norm_landmarks = None
+        self.landmarks = None
 
     def get_rotated_world_landmarks(self):
         world_landmarks_rotated = self.world_landmarks.copy()
