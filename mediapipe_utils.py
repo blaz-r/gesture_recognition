@@ -382,12 +382,11 @@ def rotated_rect_to_points(cx, cy, w, h, rotation):
     p0y = cy + b * h - a * w
     p1x = cx + a * h - b * w
     p1y = cy - b * h - a * w
-    p2x = int(2 * cx - p0x)
-    p2y = int(2 * cy - p0y)
-    p3x = int(2 * cx - p1x)
-    p3y = int(2 * cy - p1y)
-    p0x, p0y, p1x, p1y = int(p0x), int(p0y), int(p1x), int(p1y)
-    return [[p0x, p0y], [p1x, p1y], [p2x, p2y], [p3x, p3y]]
+    p2x = 2 * cx - p0x
+    p2y = 2 * cy - p0y
+    p3x = 2 * cx - p1x
+    p3y = 2 * cy - p1y
+    return np.array([[p0x, p0y], [p1x, p1y], [p2x, p2y], [p3x, p3y]], int)
 
 
 def rect_transformation(regions, w, h):
