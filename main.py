@@ -17,6 +17,5 @@ def main():
     gestures.exit()
 
 
-
 if __name__ == "__main__":
     main()

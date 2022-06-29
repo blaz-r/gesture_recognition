@@ -258,7 +258,7 @@ def main():
             detection = node.io["postprocess_pd_result"].get().getLayerFp16("result")
             pd_score, box_x, box_y, box_size, kp0_x, kp0_y, kp1_x, kp1_y = detection
 
-            node.warn(f"Manager received pd result (len={len(detection)}) : "+str(detection))
+            # node.warn(f"Manager received pd result (len={len(detection)}) : "+str(detection))
 
             # detection[0] is pd_score
             if detection[0] < pd_score_thresh:

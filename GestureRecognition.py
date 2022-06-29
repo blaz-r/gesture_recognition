@@ -14,6 +14,7 @@ class GestureRecognition:
         self.palm_detection_path = "models/n_palm_detection_lite_sh4.blob"
         self.hand_landmark_path = "models/n_hand_landmark_lite_sh4.blob"
         self.pd_postprocessing_path = "models/palm_detection_post/palm_detection_post_sh2.blob"
+        self.gesture_recognition_path = "models/gestures_lstm_model/gesture_recognition_lstm_sh4.blob"
 
         self.manager_script_path = "manager_script.py"
 
@@ -50,6 +51,12 @@ class GestureRecognition:
 
         # lm debug q
         self.q_pre_lm_manip_out = self.device.getOutputQueue(name="pre_lm_manip_out", maxSize=1, blocking=False)
+
+        # gestures queue
+        self.q_gest_in = self.device.getInputQueue(name="gest_in", maxSize=1, blocking=False)
+        self.q_gest_out = self.device.getOutputQueue(name="gest_out", maxSize=1, blocking=False)
+
+        self.data = np.array([[[5 for _ in range(42)] for _ in range(30)]], int)
 
     def create_pipeline(self):
         print("Starting pipeline creation")
@@ -128,6 +135,17 @@ class GestureRecognition:
         preprocess_lm_manip.out.link(lm_mediapipe_model.input)
         lm_mediapipe_model.out.link(manager_script.inputs["lm_result"])
 
+        gesture_model = pipeline.create(dai.node.NeuralNetwork)
+        gesture_model.setBlobPath(self.gesture_recognition_path)
+
+        gestures_in = pipeline.createXLinkIn()
+        gestures_in.setStreamName("gest_in")
+        gestures_in.out.link(gesture_model.input)
+
+        gestures_out = pipeline.createXLinkOut()
+        gestures_out.setStreamName("gest_out")
+        gesture_model.out.link(gestures_out.input)
+
         print("Pipeline successfully created")
         return pipeline
 
@@ -173,6 +191,14 @@ class GestureRecognition:
         hand = None
         if res["detection"]:
             hand = self.extract_hand_data(res)
+
+        nn_data = dai.NNData()
+        nn_data.setLayer("input", self.data)
+        self.q_gest_in.send(nn_data)
+
+        inference = self.q_gest_out.get()
+        l_names = inference.getAllLayerNames()
+        res = inference.getLayerFp16("result")
 
         return video_frame, hand, None
 
