@@ -8,3 +8,7 @@ models
 !models/palm_detection_post/convert_model.sh
 !models/palm_detection_post/make_torch_pd_postprocess.py
 !models/palm_detection_post/palm_detection_post_sh2.blob
+!models/gestures_lstm_model/convert_model.sh
+!models/gestures_lstm_model/convert-models.txt
+!models/gestures_lstm_model/gesture_recognition_lstm_sh4.blob
+!models/gestures_lstm_model/make_tf_gestures_lstm.py
