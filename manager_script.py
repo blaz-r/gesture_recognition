@@ -2,7 +2,6 @@ import marshal
 from math import sin, cos, atan2, pi, degrees, floor
 from enum import Enum
 
-
 # BufferMgr is used to statically allocate buffers once
 # (replace dynamic allocation).
 # These buffers are used for sending result to host
@@ -139,8 +138,8 @@ def transform_to_sqn_landmarks(rrn_lms, sqn_rr_center_x, sqn_rr_center_y, sqn_rr
     :param sqn_rr_center_x: x coord of rotated rectangle center in image
     :param sqn_rr_center_y: y coord of rotated rectangle center in image
     :param sqn_rr_size: size of rotated rectangle
-    :param rotation:
-    :return:
+    :param rotation: rotation of rectangle
+    :return: landmarks in image coordinate system
     """
     sqn_lms = []
     cos_rot = cos(rotation)
@@ -154,6 +153,7 @@ def transform_to_sqn_landmarks(rrn_lms, sqn_rr_center_x, sqn_rr_center_y, sqn_rr
         sqn_x, sqn_y = rr2img(rrn_lms[3 * i], rrn_lms[3 * i + 1],
                               sqn_rr_center_x, sqn_rr_center_y, sqn_rr_size,
                               cos_rot, sin_rot)
+
         sqn_lms += [sqn_x, sqn_y]
 
     return sqn_lms
@@ -244,10 +244,10 @@ img_h = 648.0           # height of image
 preprocess_pd_config = ImageManipConfig()
 preprocess_pd_config.setResizeThumbnail(pd_input_size, pd_input_size, 0, 0, 0)
 
-
 def main():
     # we start in detection sate since we don't know where the hand is
     current_state = State.DETECTION
+    sequence = []
 
     while True:
         if current_state is State.DETECTION:
@@ -298,6 +298,18 @@ def main():
 
             # Calculate the ROI for next frame
             sqn_rr_center_x, sqn_rr_center_y, sqn_rr_size, rotation = hand_landmarks_to_ROI(sqn_lms)
+
+            for coord in sqn_lms:
+                sequence.append(coord * frame_size / (5 * 10000))
+            sequence = sequence[-1260:]
+
+            if len(sequence) == 1260:
+                nn_data = NNData(1260 * 2)
+                nn_data.setLayer("input", sequence)
+                node.io["gr_input"].send(nn_data)
+
+                detection = node.io["gr_result"].get().getLayerFp16("result")
+                node.warn(f"Manager received gr results {detection}")
         else:
             current_state = State.DETECTION
             send_result_no_hand()

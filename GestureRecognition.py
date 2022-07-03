@@ -7,6 +7,8 @@ import mediapipe_utils as mpu
 
 import depthai as dai
 
+import onnxruntime
+
 
 class GestureRecognition:
     def __init__(self):
@@ -15,6 +17,7 @@ class GestureRecognition:
         self.hand_landmark_path = "models/n_hand_landmark_lite_sh4.blob"
         self.pd_postprocessing_path = "models/palm_detection_post/palm_detection_post_sh2.blob"
         self.gesture_recognition_path = "models/gestures_lstm_model/gesture_recognition_lstm_sh4.blob"
+        self.gesture_recognition_onnx_path = "models/gesture_recognition_lstm.onnx"
 
         self.manager_script_path = "manager_script.py"
 
@@ -22,9 +25,10 @@ class GestureRecognition:
 
         # scale image, this better in my case than native 1920 x 1080
         self.internal_frame_height = 640
-        width, self.scale_nd = mpu.find_isp_scale_params(self.internal_frame_height * self.resolution[0] / self.resolution[1],
-                                                         self.resolution,
-                                                         is_height=False)
+        width, self.scale_nd = mpu.find_isp_scale_params(
+            self.internal_frame_height * self.resolution[0] / self.resolution[1],
+            self.resolution,
+            is_height=False)
 
         self.img_h = int(round(self.resolution[1] * self.scale_nd[0] / self.scale_nd[1]))
         self.img_w = int(round(self.resolution[0] * self.scale_nd[0] / self.scale_nd[1]))
@@ -43,6 +47,11 @@ class GestureRecognition:
         # pipeline
         self.device.startPipeline(self.create_pipeline())
 
+        self.gesture_recognition_model = onnxruntime.InferenceSession(self.gesture_recognition_onnx_path, None)
+        self.gr_input = self.gesture_recognition_model.get_inputs()[0].name
+        self.gr_output = self.gesture_recognition_model.get_outputs()[0].name
+        self.sequence = []
+
         # video queue
         self.q_video = self.device.getOutputQueue(name="cam_out", maxSize=1, blocking=False)
 
@@ -56,7 +65,10 @@ class GestureRecognition:
         self.q_gest_in = self.device.getInputQueue(name="gest_in", maxSize=1, blocking=False)
         self.q_gest_out = self.device.getOutputQueue(name="gest_out", maxSize=1, blocking=False)
 
-        self.data = np.array([[[5 for _ in range(42)] for _ in range(30)]], int)
+        self.data = np.load("G:\Faks\diploma\gesture_capture\gesture_landmarks\pause\pause_1.npy").astype(float) / 10000
+        # self.data = np.array([[[240 for _ in range(42)] for _ in range(30)]], int)
+        self.data = np.expand_dims(self.data, axis=0)#.transpose(2, 0, 1)
+
 
     def create_pipeline(self):
         print("Starting pipeline creation")
@@ -92,7 +104,7 @@ class GestureRecognition:
         print("Adding palm detection preprocessing image manipulator")
         # palm detection preprocessing, crop to square width
         preprocess_pd_manip = pipeline.create(dai.node.ImageManip)
-        preprocess_pd_manip.setMaxOutputFrameSize(self.pd_input_length**2 * 3)
+        preprocess_pd_manip.setMaxOutputFrameSize(self.pd_input_length ** 2 * 3)
         # wait for manager script config, this way we can skip if tracking was successful
         preprocess_pd_manip.setWaitForConfigInput(True)
         preprocess_pd_manip.inputImage.setQueueSize(1)
@@ -116,7 +128,7 @@ class GestureRecognition:
 
         print("Adding landmark preprocessing image manipulator")
         preprocess_lm_manip = pipeline.create(dai.node.ImageManip)
-        preprocess_lm_manip.setMaxOutputFrameSize(self.lm_input_length**2 * 3)
+        preprocess_lm_manip.setMaxOutputFrameSize(self.lm_input_length ** 2 * 3)
         preprocess_lm_manip.setWaitForConfigInput(True)
         preprocess_lm_manip.inputImage.setQueueSize(1)
         preprocess_lm_manip.inputImage.setBlocking(False)
@@ -137,6 +149,8 @@ class GestureRecognition:
 
         gesture_model = pipeline.create(dai.node.NeuralNetwork)
         gesture_model.setBlobPath(self.gesture_recognition_path)
+        manager_script.outputs["gr_input"].link(gesture_model.input)
+        gesture_model.out.link(manager_script.inputs["gr_result"])
 
         gestures_in = pipeline.createXLinkIn()
         gestures_in.setStreamName("gest_in")
@@ -191,14 +205,23 @@ class GestureRecognition:
         hand = None
         if res["detection"]:
             hand = self.extract_hand_data(res)
+            #
+            # self.sequence.append(hand.landmarks.flatten() / (5 * 10000))
+            # self.sequence = self.sequence[-30:]
+            # if len(self.sequence) == 30:
+            #     landmarks = np.expand_dims(self.sequence, 0).astype(np.float32)
+            #     result = self.gesture_recognition_model.run([self.gr_output],
+            #                                             {self.gr_input: landmarks})
+            #     print(result)
 
-        nn_data = dai.NNData()
-        nn_data.setLayer("input", self.data)
-        self.q_gest_in.send(nn_data)
-
-        inference = self.q_gest_out.get()
-        l_names = inference.getAllLayerNames()
-        res = inference.getLayerFp16("result")
+        # nn_data = dai.NNData()
+        # landmarks = self.data.flatten().tolist()
+        # nn_data.setLayer("input", landmarks)
+        # self.q_gest_in.send(nn_data)
+        #
+        # inference = self.q_gest_out.get()
+        # l_names = inference.getAllLayerNames()
+        # res = inference.getLayerFp16("result")
 
         return video_frame, hand, None
 
