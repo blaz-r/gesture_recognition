@@ -10,6 +10,12 @@ import onnxruntime
 
 
 class GestureRecognition:
+    """
+    Class used to recognise dynamic hand gestures
+    This encapsulates palm detection, hand landmark regression
+    and then gesture recognition from 30 frames of hand landmarks
+
+    """
     def __init__(self):
         # path to models
         self.palm_detection_path = "models/palm_detection_lite_sh6.blob"
@@ -45,13 +51,16 @@ class GestureRecognition:
         # pipeline
         self.device.startPipeline(self.create_pipeline())
 
-        # gesture recognition lstm model
+        # gesture recognition lstm model, data needs to be in shape [1, 30, 42]
         self.gesture_recognition_model = onnxruntime.InferenceSession(self.gesture_recognition_onnx_path, None)
         self.gr_input = self.gesture_recognition_model.get_inputs()[0].name
         self.gr_output = self.gesture_recognition_model.get_outputs()[0].name
+        # sequence of frames for input
         self.sequence = []
+        # predictions from model, indexes of gestures in list
         self.predictions = []
 
+        # model infers gesture by giving probability on same index as the name
         self.gestures = ["play", "pause", "forward", "back", "idle"]
 
         self.gr_threshold = 0.5
@@ -66,6 +75,11 @@ class GestureRecognition:
         self.q_pre_lm_manip_out = self.device.getOutputQueue(name="pre_lm_manip_out", maxSize=1, blocking=False)
 
     def create_pipeline(self):
+        """
+        Create pipeline for gesture recognition
+
+        :return: depthai pipeline
+        """
         print("Starting pipeline creation")
 
         pipeline = dai.Pipeline()
@@ -146,6 +160,12 @@ class GestureRecognition:
         return pipeline
 
     def extract_hand_data(self, res):
+        """
+        Extract data from hand landmark neural network and save it to HandRegion object
+
+        :param res: result from manager script containing landmarks and bounding rectangle data
+        :return: HandRegion object containing hand data
+        """
         hand = mpu.HandRegion()
         hand.rect_x_center_a = res["rect_center_x"] * self.frame_size
         hand.rect_y_center_a = res["rect_center_y"] * self.frame_size
@@ -168,19 +188,25 @@ class GestureRecognition:
 
         return hand
 
-    def gesture_recognition(self, hand):
+    def recognize_gesture(self, hand):
+        """
+        Append landmarks to sequence and perform inference with LSTM network
+
+        :param hand: HandRegion object containing landmark data
+        :return: string containing name of gesture, or None if no detection is made
+        """
         self.sequence.append(hand.landmarks.flatten() / self.frame_size)
         self.sequence = self.sequence[-30:]
 
         if len(self.sequence) == 30:
+            # model expects data in shape [1, 30, 42]
             landmarks = np.expand_dims(self.sequence, 0).astype(np.float32)
 
             result = self.gesture_recognition_model.run([self.gr_output],
                                                         {self.gr_input: landmarks})
 
-            # result is list containing 2d list, actual result is on index 0, 0
+            # result is list containing 2d list, actual result is on index 0 of this 2d list
             result = result[0][0]
-            print(result)
 
             self.predictions.append(np.argmax(result))
 
@@ -193,10 +219,24 @@ class GestureRecognition:
                     return self.gestures[gesture_index]
 
     def build_manager_script(self):
+        """
+        Build manager script from file
+        Manager script handles preprocessing configs, data extraction and hand tracking
+
+        :return: script string
+        """
         with open(self.manager_script_path) as m_script:
             return m_script.read()
 
     def next_frame(self):
+        """
+        Get next frame
+        Get next video frame
+        if hand is detected return HandRegion object with landmarks else None
+        and if gesture is recognized return gesture string esle return None
+
+        :return: video frame (cv frame), HandRegion object with landmarks, gesture string
+        """
 
         in_video = self.q_video.get()
         video_frame = in_video.getCvFrame()
@@ -212,9 +252,14 @@ class GestureRecognition:
         gesture = None
         if res["detection"]:
             hand = self.extract_hand_data(res)
-            gesture = self.gesture_recognition(hand)
+            gesture = self.recognize_gesture(hand)
 
         return video_frame, hand, gesture
 
     def exit(self):
+        """
+        Close depthai device
+
+        :return: None
+        """
         self.device.close()

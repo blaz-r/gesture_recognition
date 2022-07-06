@@ -52,6 +52,13 @@ class HandRenderer:
         return frame
 
     def draw_gesture(self, frame, gesture):
+        """
+        Draw gesture text in upper left corner of frame
+
+        :param frame: cv video frame
+        :param gesture: detected gesture string
+        :return: frame with gesture text drawn on
+        """
         if gesture is not None:
             if len(self.gesture_text) > 0:
                 if gesture != self.gesture_text[-1]:
@@ -70,6 +77,8 @@ class HandRenderer:
     def wait_key(self, delay=1):
         """
         Wait for key input
+        Key 1: shows landmarks on hand
+        Key 2: shows bounding rectangle around hand
 
         :param delay: delay when waiting each cycle
         :return: key value
@@ -88,6 +97,6 @@ class HandRenderer:
         """
         Free resources
 
-        :return:
+        :return: None
         """
         cv2.destroyAllWindows()
