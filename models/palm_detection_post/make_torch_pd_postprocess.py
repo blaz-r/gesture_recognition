@@ -121,6 +121,7 @@ def export_onnx(anchors, top_k, onnx_name):
         output_names=['result']
     )
 
+
 def simplify(model):
     """
     Simplify onnx model
@@ -148,6 +149,7 @@ def main():
 
     simp_onnx = f"{file_name}.onnx"
     onnx.save(model, simp_onnx)
+    print("Model has been successfully created and saved as onnx")
 
 
 if __name__ == "__main__":

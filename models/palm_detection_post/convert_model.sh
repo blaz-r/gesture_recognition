@@ -51,7 +51,7 @@ model=$(basename -s .onnx ${model_onnx})
 
 if [ -z "$nb_shaves" ]
 then
-	nb_shaves=2
+	nb_shaves=1
 fi
 if [ $nb_shaves -lt 1 -o $nb_shaves -gt 13 ]
 then

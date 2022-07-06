@@ -58,9 +58,9 @@ convert_model () {
 	/opt/intel/openvino_2021/deployment_tools/inference_engine/lib/intel64/myriad_compile \
 		-m ${model_name}.xml \
 		-ip $input_precision \
-		-VPU_NUMBER_OF_SHAVES 4 \
-		-VPU_NUMBER_OF_CMX_SLICES 4 \
-		-o ${model_name}_sh4.blob
+		-VPU_NUMBER_OF_SHAVES 6 \
+		-VPU_NUMBER_OF_CMX_SLICES 6 \
+		-o ${model_name}_sh6.blob
 }
 
 # new models work on interval [0, 1]
