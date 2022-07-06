@@ -1,5 +1,0 @@
-python -m tf2onnx.convert --saved-model gesture_recognition_lstm --output gesture_recognition_lstm.onnx
-
-mo --input_model gesture_recognition_lstm.onnx --data_type FP16 --input input --input_shape [1,30,42]
-
-compile_tool.exe -m G:\Faks\diploma\gesture_recognition\models\gestures_lstm_model\gesture_recognition_lstm.xml -VPU_NUMBER_OF_SHAVES 4 -VPU_NUMBER_OF_CMX_SLICES 4 -o G:\Faks\diploma\gesture_recognition\models\gestures_lstm_model\gesture_recognition_lstm_sh4.blob -d MYRIAD -ip u8

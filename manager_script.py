@@ -298,18 +298,6 @@ def main():
 
             # Calculate the ROI for next frame
             sqn_rr_center_x, sqn_rr_center_y, sqn_rr_size, rotation = hand_landmarks_to_ROI(sqn_lms)
-
-            for coord in sqn_lms:
-                sequence.append(coord * frame_size / (5 * 10000))
-            sequence = sequence[-1260:]
-
-            if len(sequence) == 1260:
-                nn_data = NNData(1260 * 2)
-                nn_data.setLayer("input", sequence)
-                node.io["gr_input"].send(nn_data)
-
-                detection = node.io["gr_result"].get().getLayerFp16("result")
-                node.warn(f"Manager received gr results {detection}")
         else:
             current_state = State.DETECTION
             send_result_no_hand()

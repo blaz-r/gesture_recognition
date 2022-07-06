@@ -6,17 +6,15 @@ import numpy as np
 import mediapipe_utils as mpu
 
 import depthai as dai
-
 import onnxruntime
 
 
 class GestureRecognition:
     def __init__(self):
         # path to models
-        self.palm_detection_path = "models/n_palm_detection_lite_sh4.blob"
-        self.hand_landmark_path = "models/n_hand_landmark_lite_sh4.blob"
-        self.pd_postprocessing_path = "models/palm_detection_post/palm_detection_post_sh2.blob"
-        self.gesture_recognition_path = "models/gestures_lstm_model/gesture_recognition_lstm_sh4.blob"
+        self.palm_detection_path = "models/palm_detection_lite_sh6.blob"
+        self.hand_landmark_path = "models/hand_landmark_lite_sh6.blob"
+        self.pd_postprocessing_path = "models/palm_detection_post/palm_detection_post_sh1.blob"
         self.gesture_recognition_onnx_path = "models/gesture_recognition_lstm.onnx"
 
         self.manager_script_path = "manager_script.py"
@@ -47,10 +45,16 @@ class GestureRecognition:
         # pipeline
         self.device.startPipeline(self.create_pipeline())
 
+        # gesture recognition lstm model
         self.gesture_recognition_model = onnxruntime.InferenceSession(self.gesture_recognition_onnx_path, None)
         self.gr_input = self.gesture_recognition_model.get_inputs()[0].name
         self.gr_output = self.gesture_recognition_model.get_outputs()[0].name
         self.sequence = []
+        self.predictions = []
+
+        self.gestures = ["play", "pause", "forward", "back", "idle"]
+
+        self.gr_threshold = 0.5
 
         # video queue
         self.q_video = self.device.getOutputQueue(name="cam_out", maxSize=1, blocking=False)
@@ -60,15 +64,6 @@ class GestureRecognition:
 
         # lm debug q
         self.q_pre_lm_manip_out = self.device.getOutputQueue(name="pre_lm_manip_out", maxSize=1, blocking=False)
-
-        # gestures queue
-        self.q_gest_in = self.device.getInputQueue(name="gest_in", maxSize=1, blocking=False)
-        self.q_gest_out = self.device.getOutputQueue(name="gest_out", maxSize=1, blocking=False)
-
-        self.data = np.load("G:\Faks\diploma\gesture_capture\gesture_landmarks\pause\pause_1.npy").astype(float) / 10000
-        # self.data = np.array([[[240 for _ in range(42)] for _ in range(30)]], int)
-        self.data = np.expand_dims(self.data, axis=0)#.transpose(2, 0, 1)
-
 
     def create_pipeline(self):
         print("Starting pipeline creation")
@@ -147,19 +142,6 @@ class GestureRecognition:
         preprocess_lm_manip.out.link(lm_mediapipe_model.input)
         lm_mediapipe_model.out.link(manager_script.inputs["lm_result"])
 
-        gesture_model = pipeline.create(dai.node.NeuralNetwork)
-        gesture_model.setBlobPath(self.gesture_recognition_path)
-        manager_script.outputs["gr_input"].link(gesture_model.input)
-        gesture_model.out.link(manager_script.inputs["gr_result"])
-
-        gestures_in = pipeline.createXLinkIn()
-        gestures_in.setStreamName("gest_in")
-        gestures_in.out.link(gesture_model.input)
-
-        gestures_out = pipeline.createXLinkOut()
-        gestures_out.setStreamName("gest_out")
-        gesture_model.out.link(gestures_out.input)
-
         print("Pipeline successfully created")
         return pipeline
 
@@ -186,6 +168,30 @@ class GestureRecognition:
 
         return hand
 
+    def gesture_recognition(self, hand):
+        self.sequence.append(hand.landmarks.flatten() / self.frame_size)
+        self.sequence = self.sequence[-30:]
+
+        if len(self.sequence) == 30:
+            landmarks = np.expand_dims(self.sequence, 0).astype(np.float32)
+
+            result = self.gesture_recognition_model.run([self.gr_output],
+                                                        {self.gr_input: landmarks})
+
+            # result is list containing 2d list, actual result is on index 0, 0
+            result = result[0][0]
+            print(result)
+
+            self.predictions.append(np.argmax(result))
+
+            # output if last 10 frames are all same prediction
+            unique = np.unique(self.predictions[-10:])
+            gesture_index = np.argmax(result)
+
+            if len(unique) == 1 and unique[0] == gesture_index:
+                if result[gesture_index] > self.gr_threshold:
+                    return self.gestures[gesture_index]
+
     def build_manager_script(self):
         with open(self.manager_script_path) as m_script:
             return m_script.read()
@@ -203,27 +209,12 @@ class GestureRecognition:
         res = marshal.loads(self.q_manager_out.get().getData())
 
         hand = None
+        gesture = None
         if res["detection"]:
             hand = self.extract_hand_data(res)
-            #
-            # self.sequence.append(hand.landmarks.flatten() / (5 * 10000))
-            # self.sequence = self.sequence[-30:]
-            # if len(self.sequence) == 30:
-            #     landmarks = np.expand_dims(self.sequence, 0).astype(np.float32)
-            #     result = self.gesture_recognition_model.run([self.gr_output],
-            #                                             {self.gr_input: landmarks})
-            #     print(result)
+            gesture = self.gesture_recognition(hand)
 
-        # nn_data = dai.NNData()
-        # landmarks = self.data.flatten().tolist()
-        # nn_data.setLayer("input", landmarks)
-        # self.q_gest_in.send(nn_data)
-        #
-        # inference = self.q_gest_out.get()
-        # l_names = inference.getAllLayerNames()
-        # res = inference.getLayerFp16("result")
-
-        return video_frame, hand, None
+        return video_frame, hand, gesture
 
     def exit(self):
         self.device.close()

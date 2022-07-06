@@ -20,6 +20,8 @@ class HandRenderer:
         self.show_lm_rot_rect = False
         self.show_landmarks = True
 
+        self.gesture_text = []
+
     def draw_hand(self, frame, hand):
         """
         Draw hand on frame
@@ -47,7 +49,22 @@ class HandRenderer:
                     for x, y in hand.landmarks[:, :2]:
                         cv2.circle(frame, (x, y), radius, (0, 255, 00), -1)
 
-        cv2.imshow("Gestures", frame)
+        return frame
+
+    def draw_gesture(self, frame, gesture):
+        if gesture is not None:
+            if len(self.gesture_text) > 0:
+                if gesture != self.gesture_text[-1]:
+                    self.gesture_text.append(gesture)
+            else:
+                self.gesture_text.append(gesture)
+
+            self.gesture_text = self.gesture_text[-5:]
+
+        cv2.rectangle(frame, (0, 0), (640, 40), (245, 117, 16), -1)
+        cv2.putText(frame, ' '.join(self.gesture_text), (3, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
         return frame
 
     def wait_key(self, delay=1):

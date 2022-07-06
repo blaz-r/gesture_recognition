@@ -23,3 +23,6 @@ torchvision == 0.10.0
 onnx
 # simplifier doesn't work with py 3.10 yet
 onnx-simplifier
+
+# for gesture recognition model
+onnxruntime
