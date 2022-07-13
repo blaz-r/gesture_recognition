@@ -1,4 +1,5 @@
 import cv2
+import pyautogui
 
 from GestureRecognition import GestureRecognition
 from HandRenderer import HandRenderer
@@ -9,7 +10,10 @@ renderer = HandRenderer(gestures)
 
 def main():
     while True:
-        frame, hand, gesture = gestures.next_frame()
+        frame, hand, gesture, command = gestures.next_frame()
+
+        if command:
+            pyautogui.press(command)
 
         frame = renderer.draw_hand(frame, hand)
         frame = renderer.draw_gesture(frame, gesture)

@@ -59,9 +59,10 @@ class GestureRecognition:
         self.sequence = []
         # predictions from model, indexes of gestures in list
         self.predictions = []
+        self.prev_gesture = "idle"
 
         # model infers gesture by giving probability on same index as the name
-        self.gestures = ["play", "pause", "forward", "back", "idle"]
+        self.gestures = ["play", "pause", "forward", "back", "idle", "vol"]
 
         self.gr_threshold = 0.5
 
@@ -218,6 +219,36 @@ class GestureRecognition:
                 if result[gesture_index] > self.gr_threshold:
                     return self.gestures[gesture_index]
 
+    def gesture_to_command(self, gesture):
+        """
+        Convert gesture string to actual command string
+
+        :param gesture: gesture string
+        :return: command string
+        """
+        if gesture == self.prev_gesture:
+            return None
+
+        if gesture == "play":
+            return "playpause"
+        elif gesture == "pause":
+            return "playpause"
+        elif gesture == "back":
+            return "prevtrack"
+        elif gesture == "forward":
+            return "nexttrack"
+        elif gesture == "vol":
+            # * 2 cuz we have 2 coords and + 1 as we want y coord, index finger is on index 8
+            index_finger_pos = self.sequence[-1][8 * 2 + 1]
+
+            # index finger in upper half
+            if index_finger_pos < (648 / 1152) * 0.5:
+                return "volumeup"
+            else:
+                return "volumedown"
+        else:
+            return None
+
     def build_manager_script(self):
         """
         Build manager script from file
@@ -233,9 +264,10 @@ class GestureRecognition:
         Get next frame
         Get next video frame
         if hand is detected return HandRegion object with landmarks else None
-        and if gesture is recognized return gesture string esle return None
+        and if gesture is recognized return gesture string else return None
+        if gesture is valid and not idle, return command corresponding to gesture
 
-        :return: video frame (cv frame), HandRegion object with landmarks, gesture string
+        :return: video frame (cv frame), HandRegion object with landmarks, gesture string, command string
         """
 
         in_video = self.q_video.get()
@@ -250,11 +282,14 @@ class GestureRecognition:
 
         hand = None
         gesture = None
+        command = None
         if res["detection"]:
             hand = self.extract_hand_data(res)
             gesture = self.recognize_gesture(hand)
+            command = self.gesture_to_command(gesture)
+            self.prev_gesture = gesture
 
-        return video_frame, hand, gesture
+        return video_frame, hand, gesture, command
 
     def exit(self):
         """

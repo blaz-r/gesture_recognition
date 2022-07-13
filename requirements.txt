@@ -26,3 +26,6 @@ onnx-simplifier
 
 # for gesture recognition model
 onnxruntime
+
+# for sending play/pause/next/back controls
+pyautogui
