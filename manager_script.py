@@ -52,7 +52,7 @@ def send_result(result):
 
 def send_result_hand(lm_score, handedness,
                      rect_center_x, rect_center_y, rect_size,
-                     rotation, rrn_lms, sqn_lms, world_lms):
+                     rotation, sqn_lms):
     """
     Make dictionary and send to host
 
@@ -69,8 +69,7 @@ def send_result_hand(lm_score, handedness,
     """
     result = {"detection": 1, "lm_score": lm_score, "handedness": handedness,
               "rotation": rotation, "rect_center_x": rect_center_x, "rect_center_y": rect_center_y,
-              "rect_size": rect_size, "rrn_lms": rrn_lms, "sqn_lms": sqn_lms,
-              "world_lms": world_lms}
+              "rect_size": rect_size, "sqn_lms": sqn_lms}
     send_result(result)
 
 
@@ -166,7 +165,7 @@ def hand_landmarks_to_ROI(sqn_lms):
     Calcualted ROI for next frame, this way we perform tracking of hand, and don't need to detect hand again
 
     :param sqn_lms: landmarks in original (square) image coordinates
-    :return: (sqn_rr_center_x, sqn_rr_center_y, sqn_rr_size) -> new ROI rectangle params
+    :return: (sqn_rr_center_x, sqn_rr_center_y, sqn_rr_size, rotation) -> new ROI rectangle params
     """
     # Compute rotation
     x0 = sqn_lms[0]
@@ -294,7 +293,7 @@ def main():
             # Send result to host
             send_result_hand(lm_score, handedness, sqn_rr_center_x,
                              sqn_rr_center_y, sqn_rr_size, rotation,
-                             rrn_lms, sqn_lms, world_lms)
+                             sqn_lms)
 
             # Calculate the ROI for next frame
             sqn_rr_center_x, sqn_rr_center_y, sqn_rr_size, rotation = hand_landmarks_to_ROI(sqn_lms)

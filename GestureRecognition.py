@@ -177,7 +177,6 @@ class GestureRecognition:
         hand.lm_score = res["lm_score"]
         hand.handedness = res["handedness"]
         hand.label = "right" if hand.handedness > 0.5 else "left"
-        hand.norm_landmarks = np.array(res['rrn_lms']).reshape(-1, 3)
         hand.landmarks = (np.array(res["sqn_lms"]) * self.frame_size).reshape(-1, 2).astype(int)
 
         # since we added padding to make the image square,
