@@ -59,6 +59,7 @@ class GestureRecognition:
         self.sequence = []
         # predictions from model, indexes of gestures in list
         self.predictions = []
+        self.pred_probs = []
         self.prev_gesture = "idle"
 
         # model infers gesture by giving probability on same index as the name
@@ -207,15 +208,18 @@ class GestureRecognition:
 
             # result is list containing 2d list, actual result is on index 0 of this 2d list
             result = result[0][0]
+            gesture_index = np.argmax(result)
 
-            self.predictions.append(np.argmax(result))
+            # save gesture index
+            self.predictions.append(gesture_index)
+            # and gesture probability
+            self.pred_probs.append(result[gesture_index])
 
             # output if last 10 frames are all same prediction
             unique = np.unique(self.predictions[-10:])
-            gesture_index = np.argmax(result)
-
             if len(unique) == 1 and unique[0] == gesture_index:
-                if result[gesture_index] > self.gr_threshold:
+                # and all probabilities need to be higher than threshold
+                if np.all(prob > self.gr_threshold for prob in self.pred_probs[-10:]):
                     return self.gestures[gesture_index]
 
     def gesture_to_command(self, gesture):
