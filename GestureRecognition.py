@@ -215,11 +215,11 @@ class GestureRecognition:
             # and gesture probability
             self.pred_probs.append(result[gesture_index])
 
-            # output if last 10 frames are all same prediction
-            unique = np.unique(self.predictions[-10:])
+            # output if last 15 frames are all same prediction
+            unique = np.unique(self.predictions[-15:])
             if len(unique) == 1 and unique[0] == gesture_index:
                 # and all probabilities need to be higher than threshold
-                if np.all(prob > self.gr_threshold for prob in self.pred_probs[-10:]):
+                if np.all(prob > self.gr_threshold for prob in self.pred_probs[-15:]):
                     return self.gestures[gesture_index]
 
     def gesture_to_command(self, gesture):
