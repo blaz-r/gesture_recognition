@@ -68,9 +68,9 @@ class HandRenderer:
 
             self.gesture_text = self.gesture_text[-5:]
 
-        cv2.rectangle(frame, (0, 0), (640, 40), (245, 117, 16), -1)
+        cv2.rectangle(frame, (0, 0), (1152, 40), (245, 117, 16), -1)
         cv2.putText(frame, ' '.join(self.gesture_text), (3, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                    cv2.FONT_HERSHEY_DUPLEX, 1, (240, 240, 255), 2, cv2.LINE_AA)
 
         return frame
 
