@@ -66,6 +66,7 @@ class GestureRecognition:
         self.gestures = ["play", "pause", "forward", "back", "idle", "vol"]
 
         self.gr_threshold = 0.5
+        self.unique_limit = 20
 
         # video queue
         self.q_video = self.device.getOutputQueue(name="cam_out", maxSize=1, blocking=False)
@@ -216,10 +217,10 @@ class GestureRecognition:
             self.pred_probs.append(result[gesture_index])
 
             # output if last 15 frames are all same prediction
-            unique = np.unique(self.predictions[-15:])
+            unique = np.unique(self.predictions[-self.unique_limit:])
             if len(unique) == 1 and unique[0] == gesture_index:
                 # and all probabilities need to be higher than threshold
-                if np.all(prob > self.gr_threshold for prob in self.pred_probs[-15:]):
+                if np.all(prob > self.gr_threshold for prob in self.pred_probs[-self.unique_limit:]):
                     return self.gestures[gesture_index]
 
     def gesture_to_command(self, gesture):
