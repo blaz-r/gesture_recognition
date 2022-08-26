@@ -21,7 +21,7 @@ class GestureRecognition:
         self.palm_detection_path = "models/palm_detection_lite_sh6.blob"
         self.hand_landmark_path = "models/hand_landmark_lite_sh6.blob"
         self.pd_postprocessing_path = "models/palm_detection_post/palm_detection_post_sh1.blob"
-        self.gesture_recognition_onnx_path = "models/gesture_recognition_lstm.onnx"
+        self.gesture_recognition_onnx_path = "models/gesture_recognition_lstm_3p.onnx"
 
         self.manager_script_path = "manager_script.py"
 
@@ -92,7 +92,7 @@ class GestureRecognition:
         rgb_cam.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
         rgb_cam.setBoardSocket(dai.CameraBoardSocket.RGB)
         rgb_cam.setInterleaved(False)
-        rgb_cam.setFps(36)
+        rgb_cam.setFps(30)
         rgb_cam.setIspScale(self.scale_nd[0], self.scale_nd[1])
         rgb_cam.setVideoSize(self.img_w, self.img_h)
         rgb_cam.setPreviewSize(self.img_w, self.img_h)
