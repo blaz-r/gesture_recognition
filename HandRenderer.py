@@ -89,6 +89,8 @@ class HandRenderer:
             self.show_landmarks = not self.show_landmarks
         elif key == ord('2'):
             self.show_lm_rot_rect = not self.show_lm_rot_rect
+        elif key == ord('3'):
+            self.gesture_text = []
 
         return key
 
