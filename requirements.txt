@@ -15,17 +15,25 @@ depthai==2.16.0.0
 
 opencv-python
 numpy
-blobconverter
-
-# used for postprocessing model
-torch == 1.9
-torchvision == 0.10.0
-onnx
-# simplifier doesn't work with py 3.10 yet
-onnx-simplifier
 
 # for gesture recognition model
 onnxruntime
 
 # for sending play/pause/next/back controls
 pyautogui
+
+
+# OPTIONAL used for postprocessing model
+torch == 1.9
+torchvision == 0.10.0
+onnx
+# simplifier doesn't work with py 3.10 yet
+onnx-simplifier
+
+# OPTIONAL used by gesture_lstm project
+tensorflow
+openvino
+scikit-learn
+openvino-dev
+mediapipe
+tf2onnx
